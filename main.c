@@ -49,8 +49,6 @@ void dosya_turu_degistir(char *dosya_adi, char *yeni_tur) {
 }
 
 
-
-
 void dosya_duzenle(const char *dosya_adi) {
     char komut[1024];
     // Varsayılan metin editörü kullanarak dosyayı aç
@@ -105,6 +103,7 @@ void dosya_kopyala(char *kaynak_dosya, char *hedef_dosya) {
 
     printf("Dosya kopyalandı.\n");
 }
+
 int dizin_olustur(char *dizin_adi) {
     // mkdir fonksiyonuyla yeni bir dizin oluştur
     if (mkdir(dizin_adi) == 0) {
@@ -118,6 +117,34 @@ int dizin_olustur(char *dizin_adi) {
             perror("mkdir");
         }
         return -1; // Hata durumu
+    }
+}
+void dizin_degistir(char *yeni_dizin) {
+    if (chdir(yeni_dizin) != 0) {
+        perror("Dizin değiştirme hatası");
+        exit(EXIT_FAILURE);
+    } else{
+        printf("Dizin degistirildi");
+    }
+}
+char *dosyaYolu(const char *dosyaAdi,char *tamYol) {
+    // Geçerli çalışma dizini yolunu al
+    char cwd[PATH_MAX];
+    if (getcwd(cwd, sizeof(cwd)) == NULL) {
+        perror("getcwd() error");
+        exit(EXIT_FAILURE);
+    }
+
+    // Dosya adını çalışma dizini yoluna ekle
+    strcpy(tamYol, cwd);
+    strcat(tamYol, "\\");
+    strcat(tamYol, dosyaAdi);
+
+    // Dosyanın var olup olmadığını kontrol et
+    if (access(tamYol, F_OK) != -1) {
+        return tamYol;
+    } else {
+        return NULL;
     }
 }
 void dizin_sil(char *dizin_adi) {
@@ -238,6 +265,7 @@ char *format_time(time_t time) {
     strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", localtime(&time));
     return buf;
 }
+
 void dosya_izinleri_ayarla(char *dosya_adi, char *izinler) {
     int izin;
     if (izinler[0] == 'r' && izinler[1] == 'w' && izinler[2] == 'x') {
@@ -353,6 +381,11 @@ int main(int argc, char **argv) {
                 } else if (strncmp(command, "open", 4) == 0) {
                     ptr = strchr(command, '-');
                     dosya_ac(ptr + 1);
+                } else if (strncmp(command, "cat", 3) == 0) {
+                    ptr = strchr(command, '-');
+                    char* yol = dosyaYolu(ptr+1,path);
+                    strncpy(path, yol, sizeof(path));
+                    dizin_degistir(path);
                 } else if (strncmp(command, "changetype", 10) == 0) {
                     char yenitur[15];
                     ptr = strchr(command, '-');
@@ -364,12 +397,12 @@ int main(int argc, char **argv) {
                 } else if (strncmp(command, "duzenle", 7) == 0) {
                     ptr = strchr(command, '-');
                     dosya_duzenle(ptr + 1);
-                }else if (strncmp(command, "mkdir", 5) == 0) {
+                } else if (strncmp(command, "mkdir", 5) == 0) {
                     ptr = strchr(command, '-');
-                    dizin_olustur(ptr+1);
-                }else if (strncmp(command, "rmdir", 5) == 0) {
+                    dizin_olustur(ptr + 1);
+                } else if (strncmp(command, "rmdir", 5) == 0) {
                     ptr = strchr(command, '-');
-                    dizin_sil(ptr+1);
+                    dizin_sil(ptr + 1);
                 } else if (strncmp(command, "izin", 4) == 0) {
 
                     char yeniizin[15];
@@ -411,10 +444,8 @@ int main(int argc, char **argv) {
                 } else {
                     printf("Hatali tuslama yapildi");
                 }
-
             }
-        }
-        else{
+        } else {
             printf("Hatali tuslama yaptiniz programdan cikariliyorsunuz");
             break;
         }
